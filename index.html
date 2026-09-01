@@ -690,7 +690,7 @@
     <label>Fornecedor</label>
     <input id="estForn" placeholder="revenda / fundidor">
     <div class="est-credit" id="estCredito" hidden>
-      <div class="est-credit-t">Crédito de retorno · −15% de refusão</div>
+      <div class="est-credit-t">Crédito de cavaco · −15% de refusão</div>
       <div class="est-hint">Entra a preço do metal menos a perda de refusão.</div>
       <div class="est-row2" style="margin-top:4px">
         <div><label>Liga de referência</label>
@@ -1659,9 +1659,9 @@ function eData(iso){ if(!iso) return ''; const a=iso.split('-'); return a[2]+'/'
 function eHoje(){ return new Date().toISOString().slice(0,10); }
 function eToast(msg){ let t=document.querySelector('.est-toast'); if(!t){ t=document.createElement('div'); t.className='est-toast'; document.body.appendChild(t); } t.textContent=msg; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('show'),2200); }
 
-// ---- retorno (cavaco/sucata) ----
+// ---- retorno (cavaco) ----
 const E_LOSS=0.15;
-function eIsRetorno(nome){ return /^(cavaco|sucata)\b/i.test((nome||'').trim()); }
+function eIsRetorno(nome){ return /^cavaco\b/i.test((nome||'').trim()); }
 function eAluminio(nome){ return /alum[ií]nio/i.test(nome||''); }
 function eLigaDoNome(nome){ const m=(nome||'').match(/SAE\s*620|SAE\s*65|TM23/i); return m?m[0].toUpperCase().replace(/\s+/g,' '):''; }
 function eMediaLingote(liga){ const lin=estoque.materiais.find(m=>/^lingote/i.test(m.nome)&&eLigaDoNome(m.nome)===liga.toUpperCase()); return lin?eResumo(lin.id).media:0; }
