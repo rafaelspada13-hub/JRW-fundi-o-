@@ -672,6 +672,7 @@
     <button class="est-tab on" data-est="estoque">Estoque</button>
     <button class="est-tab" data-est="entrada">Entrada</button>
     <button class="est-tab" data-est="baixa">Baixa</button>
+    <button class="est-tab" data-est="terceiros">Terceiros</button>
     <button class="est-tab" data-est="hist">Histórico</button>
   </nav>
 
@@ -725,6 +726,34 @@
     <input id="estbObs" placeholder="peça / cliente">
     <div class="est-live"><span>Total da baixa</span><b id="estbTotal">0 kg · R$ 0,00</b></div>
     <button class="est-btn" id="estbSave">Registrar baixa</button>
+  </section>
+
+  <section class="panel est-view" id="est-terceiros" hidden>
+    <div class="est-hint" style="margin:0 0 12px">Material que o cliente traz para industrialização (fundição por conta do cliente) — não entra no valor do seu estoque, só controla saldo por cliente.</div>
+    <div id="estTercLista"></div>
+
+    <details class="adv" style="margin-top:16px">
+      <summary>Registrar movimento</summary>
+      <div class="row" style="margin-top:12px">
+        <div class="field"><label>Cliente</label><input id="estTCli" placeholder="Nome do cliente" list="estTClientesList" autocomplete="off"><datalist id="estTClientesList"></datalist></div>
+        <div class="field"><label>Material</label><input id="estTMat" placeholder="ex.: Bronze SAE 620" list="estTMateriaisList" autocomplete="off"><datalist id="estTMateriaisList"></datalist></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Tipo</label>
+          <div class="seg" id="estTTipo">
+            <button data-tt="in" class="on">Entrada</button>
+            <button data-tt="out">Saída (consumo)</button>
+          </div>
+        </div>
+        <div class="field"><label>Quantidade (kg)</label><input id="estTQtd" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Data</label><input type="date" id="estTData"></div>
+        <div class="field"><label>Observação (opcional)</label><input id="estTObs" placeholder="NF / peça / orçamento"></div>
+      </div>
+      <button class="est-btn" id="estTSave">Registrar</button>
+    </details>
   </section>
 
   <section class="panel est-view" id="est-hist" hidden>
@@ -1602,7 +1631,7 @@ $("novaPeca").addEventListener('click',()=>{
 
 
 // ================= MODULO DE ESTOQUE (sincroniza junto no JSON da nuvem) =================
-let estoque = {materiais:[], lotes:[], saidas:[]};
+let estoque = {materiais:[], lotes:[], saidas:[], terc:[]};
 try{ const s=localStorage.getItem('orc_estoque'); if(s) estoque=JSON.parse(s); }catch(e){}
 function eUid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function persistEstoque(){ try{ localStorage.setItem('orc_estoque',JSON.stringify(estoque)); }catch(e){} agendarSync(); }
@@ -1610,6 +1639,7 @@ function aplicarEstoqueNuvem(d){
   estoque.materiais = Array.isArray(d.materiais)?d.materiais:[];
   estoque.lotes     = Array.isArray(d.lotes)?d.lotes:[];
   estoque.saidas    = Array.isArray(d.saidas)?d.saidas:[];
+  estoque.terc      = Array.isArray(d.terc)?d.terc:[];
   estoque._migCav2  = !!d._migCav2;
   try{ localStorage.setItem('orc_estoque',JSON.stringify(estoque)); }catch(e){}
 }
@@ -1617,6 +1647,7 @@ function aplicarEstoqueNuvem(d){
   if(!Array.isArray(estoque.materiais)) estoque.materiais=[];
   if(!Array.isArray(estoque.lotes))     estoque.lotes=[];
   if(!Array.isArray(estoque.saidas))    estoque.saidas=[];
+  if(!Array.isArray(estoque.terc))      estoque.terc=[];
   if(estoque.materiais.length===0){
     estoque.materiais=[
       {id:eUid(),nome:"Lingote SAE 620",unidade:"kg"},
@@ -1774,12 +1805,43 @@ function eRenderHist(){
   });
 }
 
+// ---- terceiros (material do cliente / industrializacao) ----
+function eSaldosTerc(){
+  const map={};
+  estoque.terc.forEach(m=>{
+    const k=(m.cliente||'').trim()+'|||'+(m.material||'').trim();
+    if(!map[k]) map[k]={cliente:(m.cliente||'').trim(),material:(m.material||'').trim(),saldo:0};
+    map[k].saldo += (m.tipo==='out'?-1:1)*m.quantidade;
+  });
+  return map;
+}
+function eRenderTerc(){
+  const box=$("estTercLista"); if(!box) return;
+  box.innerHTML='';
+  const map=eSaldosTerc(), porCliente={};
+  Object.values(map).forEach(r=>{ (porCliente[r.cliente]=porCliente[r.cliente]||[]).push(r); });
+  const clientesOrd=Object.keys(porCliente).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  if(clientesOrd.length===0){ box.innerHTML='<div class="est-empty">Nenhum material de cliente registrado.</div>'; }
+  clientesOrd.forEach(cli=>{
+    const itens=porCliente[cli].sort((a,b)=>a.material.localeCompare(b.material,'pt-BR'));
+    const card=document.createElement('div'); card.className='cliCard';
+    card.innerHTML='<div class="cliNome">'+cli+'</div>'
+      + itens.map(it=>'<div class="ln'+(it.saldo<=0?'':' big')+'"><span class="k">'+it.material+'</span><span class="v">'+eQ(it.saldo)+' kg</span></div>').join('');
+    box.appendChild(card);
+  });
+  const clientesSet=[...new Set(estoque.terc.map(m=>(m.cliente||'').trim()).filter(Boolean))];
+  const materiaisSet=[...new Set(estoque.terc.map(m=>(m.material||'').trim()).filter(Boolean))];
+  $("estTClientesList").innerHTML = clientesSet.map(c=>'<option value="'+c+'">').join('');
+  $("estTMateriaisList").innerHTML = materiaisSet.map(m=>'<option value="'+m+'">').join('');
+}
+
 // ---- eventos ----
 document.querySelectorAll('#tab-estoque .est-tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#tab-estoque .est-tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
-  ['estoque','entrada','baixa','hist'].forEach(v=> $('est-'+v).hidden = v!==b.dataset.est );
+  ['estoque','entrada','baixa','terceiros','hist'].forEach(v=> $('est-'+v).hidden = v!==b.dataset.est );
   if(b.dataset.est==='baixa') eRenderBaixaLotes();
+  if(b.dataset.est==='terceiros') eRenderTerc();
   if(b.dataset.est==='hist') eRenderHist();
 }));
 $("estQtd").addEventListener('input',eCalcEntrada);
@@ -1818,7 +1880,25 @@ $("estAddMat").addEventListener('click',()=>{
   estoque.materiais.push({id:eUid(),nome:nome.trim(),unidade:un.trim()});
   persistEstoque(); renderEstoque(); eToast('Material adicionado.');
 });
-$("estData").value=eHoje(); $("estbData").value=eHoje();
+document.querySelectorAll('#estTTipo button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#estTTipo button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+}));
+$("estTSave").addEventListener('click',()=>{
+  const cli=$("estTCli").value.trim(), mat=$("estTMat").value.trim(), q=num($("estTQtd").value);
+  const tipoBtn=document.querySelector('#estTTipo button.on'), tipo=tipoBtn?tipoBtn.dataset.tt:'in';
+  if(!cli) return eToast('Informe o cliente.');
+  if(!mat) return eToast('Informe o material.');
+  if(q<=0)  return eToast('Quantidade inválida.');
+  if(tipo==='out'){
+    const map=eSaldosTerc(), k=cli+'|||'+mat, saldo=(map[k]?map[k].saldo:0);
+    if(q>saldo+1e-9) return eToast('Saldo insuficiente ('+eQ(saldo)+' kg disponível).');
+  }
+  estoque.terc.push({id:eUid(),cliente:cli,material:mat,data:$("estTData").value||eHoje(),tipo:tipo,quantidade:q,obs:$("estTObs").value.trim()});
+  persistEstoque(); eRenderTerc();
+  $("estTQtd").value=''; $("estTObs").value='';
+  eToast(tipo==='in'?'Entrada registrada.':'Saída registrada.');
+});
+$("estData").value=eHoje(); $("estbData").value=eHoje(); $("estTData").value=eHoje();
 eAtualizaEntrada();
 
 // ================= CENTRAL NA NUVEM (Supabase) =================
