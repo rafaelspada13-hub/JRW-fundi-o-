@@ -308,6 +308,7 @@
   <button class="tab on" data-tab="calc">Calculadora</button>
   <button class="tab" data-tab="saved">Salvos <span class="badge" id="savedCount">0</span></button>
   <button class="tab" data-tab="clientes">Clientes <span class="badge" id="clientesCount">0</span></button>
+  <button class="tab" data-tab="estoque">Estoque</button>
 </nav>
 
 <div id="tab-calc">
@@ -606,6 +607,132 @@
   <div id="clientesBody"></div>
 </section>
 </div><!-- /tab-clientes -->
+
+<style>
+/* ===== Modulo de estoque ===== */
+#tab-estoque .est-head{margin-bottom:14px}
+#tab-estoque .est-total-label{color:var(--muted);font-size:12px;letter-spacing:.03em}
+#tab-estoque .est-total{font-family:"Archivo",system-ui,sans-serif;font-size:28px;font-weight:800;color:var(--bronze);font-variant-numeric:tabular-nums}
+#tab-estoque .est-sub{display:flex;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#tab-estoque .est-tab{flex:1;min-width:74px;border:0;background:none;color:var(--muted);padding:9px 8px;border-radius:9px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+#tab-estoque .est-tab.on{background:var(--panel);color:var(--ink)}
+#tab-estoque label{display:block;color:var(--muted);font-size:12px;margin:10px 0 4px}
+#tab-estoque input,#tab-estoque select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:10px 12px;font:inherit;font-size:15px}
+#tab-estoque input:focus,#tab-estoque select:focus{outline:none;border-color:var(--bronze)}
+#tab-estoque .est-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#tab-estoque .est-btn{width:100%;margin-top:16px;padding:13px;border:0;border-radius:10px;background:var(--bronze);color:#1a1206;font-weight:800;font-size:15px;cursor:pointer}
+#tab-estoque .est-btn:active{filter:brightness(.92)}
+#tab-estoque .est-live{margin-top:14px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;font-size:14px}
+#tab-estoque .est-live b{font-family:"JetBrains Mono",monospace;color:var(--bronze)}
+#tab-estoque .est-credit{margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+#tab-estoque .est-credit-t{font-size:13px;font-weight:700}
+#tab-estoque .est-hint{color:var(--muted);font-size:12px;margin-top:6px}
+#tab-estoque .est-tools{margin-bottom:12px}
+#tab-estoque .est-mat{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--panel2)}
+#tab-estoque .est-mat-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;cursor:pointer}
+#tab-estoque .est-mat-name{font-weight:700}
+#tab-estoque .est-mat-sub{color:var(--muted);font-size:12px;margin-top:2px;font-variant-numeric:tabular-nums}
+#tab-estoque .est-mat-val{text-align:right;white-space:nowrap}
+#tab-estoque .est-mat-val b{color:var(--bronze);font-family:"JetBrains Mono",monospace}
+#tab-estoque .est-mat-val small{display:block;color:var(--muted);font-size:11px}
+#tab-estoque .est-lotes{display:none;border-top:1px solid var(--line);padding:4px 14px 10px}
+#tab-estoque .est-mat.open .est-lotes{display:block}
+#tab-estoque .est-lote{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+#tab-estoque .est-lote:last-child{border-bottom:0}
+#tab-estoque .est-lote .r{text-align:right;white-space:nowrap;font-family:"JetBrains Mono",monospace}
+#tab-estoque .est-lote .l{color:var(--muted)}
+#tab-estoque .est-empty{color:var(--muted);font-size:13px;padding:6px 0}
+#tab-estoque .est-pick{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-top:8px}
+#tab-estoque .est-pick .i{flex:1;font-size:13px}
+#tab-estoque .est-pick .i small{color:var(--muted);font-family:"JetBrains Mono",monospace}
+#tab-estoque .est-pick input{width:96px;text-align:right}
+#tab-estoque .est-mv{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+#tab-estoque .est-mv:last-child{border-bottom:0}
+#tab-estoque .est-cbar{width:6px;border-radius:3px;flex:none}
+#tab-estoque .est-cbar.in{background:var(--good)}
+#tab-estoque .est-cbar.out{background:var(--bad)}
+#tab-estoque .est-mv .b{flex:1;min-width:0}
+#tab-estoque .est-mv .t{font-weight:700;font-size:14px}
+#tab-estoque .est-mv .d{color:var(--muted);font-size:12px;margin-top:2px;font-variant-numeric:tabular-nums}
+#tab-estoque .est-mv .v{white-space:nowrap;font-weight:700;font-family:"JetBrains Mono",monospace;font-size:13px}
+#tab-estoque .est-mv .v.in{color:var(--good)}
+#tab-estoque .est-mv .v.out{color:var(--bad)}
+#tab-estoque .est-del{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:0 2px;align-self:flex-start;line-height:1}
+.est-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);background:#111418;color:#fff;border:1px solid var(--line);padding:11px 18px;border-radius:22px;font-size:14px;opacity:0;transition:.25s;z-index:60;pointer-events:none}
+.est-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+
+<div id="tab-estoque" hidden>
+  <div class="est-head">
+    <div class="est-total-label">Valor em estoque</div>
+    <div class="est-total" id="estTotal">R$ 0,00</div>
+  </div>
+
+  <nav class="est-sub">
+    <button class="est-tab on" data-est="estoque">Estoque</button>
+    <button class="est-tab" data-est="entrada">Entrada</button>
+    <button class="est-tab" data-est="baixa">Baixa</button>
+    <button class="est-tab" data-est="hist">Histórico</button>
+  </nav>
+
+  <section class="panel est-view" id="est-estoque">
+    <div class="est-tools"><button class="mini" id="estAddMat">+ Material</button></div>
+    <div id="estLista"></div>
+  </section>
+
+  <section class="panel est-view" id="est-entrada" hidden>
+    <label>Material</label>
+    <select id="estMat"></select>
+    <div class="est-row2">
+      <div><label>Data</label><input type="date" id="estData"></div>
+      <div><label>Nota fiscal (opcional)</label><input id="estNf" placeholder="nº NF"></div>
+    </div>
+    <label>Fornecedor</label>
+    <input id="estForn" placeholder="revenda / fundidor">
+    <div class="est-credit" id="estCredito" hidden>
+      <div class="est-credit-t">Crédito de retorno · −15% de refusão</div>
+      <div class="est-hint">Entra a preço do metal menos a perda de refusão.</div>
+      <div class="est-row2" style="margin-top:4px">
+        <div><label>Liga de referência</label>
+          <select id="estRef">
+            <option value="SAE 620">SAE 620</option>
+            <option value="SAE 65">SAE 65</option>
+            <option value="TM23">TM23</option>
+          </select></div>
+        <div><label>Preço do metal (R$/kg)</label><input id="estMetal" inputmode="decimal" placeholder="0,00"></div>
+      </div>
+      <div class="est-hint" id="estCredCalc"></div>
+    </div>
+    <div class="est-row2">
+      <div><label>Quantidade (<span class="estUn">kg</span>)</label><input id="estQtd" inputmode="decimal" placeholder="0"></div>
+      <div><label>Valor unitário (R$/<span class="estUn">kg</span>)</label><input id="estVu" inputmode="decimal" placeholder="0,00"></div>
+    </div>
+    <div class="est-hint" id="estAlHint" hidden>Alumínio: informe o valor na mão — sem fator de perda definido.</div>
+    <div class="est-live"><span>Total da remessa</span><b id="estTotalRem">R$ 0,00</b></div>
+    <button class="est-btn" id="estSave">Registrar entrada</button>
+  </section>
+
+  <section class="panel est-view" id="est-baixa" hidden>
+    <div class="est-row2">
+      <div><label>Orçamento / proposta</label><input id="estbOrc" placeholder="0001/2026"></div>
+      <div><label>Data</label><input type="date" id="estbData"></div>
+    </div>
+    <label>Material</label>
+    <select id="estbMat"></select>
+    <label>De quais lotes sai o metal?</label>
+    <div id="estbLotes"><div class="est-empty">Escolha um material com saldo.</div></div>
+    <label>Observação (opcional)</label>
+    <input id="estbObs" placeholder="peça / cliente">
+    <div class="est-live"><span>Total da baixa</span><b id="estbTotal">0 kg · R$ 0,00</b></div>
+    <button class="est-btn" id="estbSave">Registrar baixa</button>
+  </section>
+
+  <section class="panel est-view" id="est-hist" hidden>
+    <select id="estHFiltro" style="margin-bottom:10px"></select>
+    <div id="estHLista"></div>
+  </section>
+</div>
+
 
 <div class="foot">Fundição · Orçamento — todos os valores são editáveis. Funciona offline.</div>
 </div>
@@ -1169,7 +1296,9 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   $("tab-calc").hidden = t.dataset.tab!=="calc";
   $("tab-saved").hidden = t.dataset.tab!=="saved";
   $("tab-clientes").hidden = t.dataset.tab!=="clientes";
+  $("tab-estoque").hidden = t.dataset.tab!=="estoque";
   if(t.dataset.tab==="clientes") renderClientes();
+  if(t.dataset.tab==="estoque") renderEstoque();
 }));
 
 // ---------- geração de PDF (impressão nativa) ----------
@@ -1471,6 +1600,227 @@ $("novaPeca").addEventListener('click',()=>{
   window.scrollTo({top:0,behavior:'smooth'});
 });
 
+
+// ================= MODULO DE ESTOQUE (sincroniza junto no JSON da nuvem) =================
+let estoque = {materiais:[], lotes:[], saidas:[]};
+try{ const s=localStorage.getItem('orc_estoque'); if(s) estoque=JSON.parse(s); }catch(e){}
+function eUid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function persistEstoque(){ try{ localStorage.setItem('orc_estoque',JSON.stringify(estoque)); }catch(e){} agendarSync(); }
+function aplicarEstoqueNuvem(d){
+  estoque.materiais = Array.isArray(d.materiais)?d.materiais:[];
+  estoque.lotes     = Array.isArray(d.lotes)?d.lotes:[];
+  estoque.saidas    = Array.isArray(d.saidas)?d.saidas:[];
+  estoque._migCav2  = !!d._migCav2;
+  try{ localStorage.setItem('orc_estoque',JSON.stringify(estoque)); }catch(e){}
+}
+(function seedEstoque(){
+  if(!Array.isArray(estoque.materiais)) estoque.materiais=[];
+  if(!Array.isArray(estoque.lotes))     estoque.lotes=[];
+  if(!Array.isArray(estoque.saidas))    estoque.saidas=[];
+  if(estoque.materiais.length===0){
+    estoque.materiais=[
+      {id:eUid(),nome:"Lingote SAE 620",unidade:"kg"},
+      {id:eUid(),nome:"Lingote SAE 65",unidade:"kg"},
+      {id:eUid(),nome:"Lingote TM23",unidade:"kg"},
+      {id:eUid(),nome:"Lingote Alumínio",unidade:"kg"}
+    ];
+  }
+  if(!estoque._migCav2){
+    estoque.materiais=estoque.materiais.filter(m=>{
+      const gen=['cavaco','sucata'].includes((m.nome||'').trim().toLowerCase());
+      const semLote=estoque.lotes.filter(l=>l.materialId===m.id).length===0;
+      return !(gen && semLote);
+    });
+    const nomes=estoque.materiais.map(m=>(m.nome||'').trim().toLowerCase());
+    ['SAE 620','SAE 65','TM23','Alumínio'].forEach(function(liga){
+      ['Cavaco','Sucata'].forEach(function(t){
+        const nome=t+' '+liga;
+        if(nomes.indexOf(nome.toLowerCase())<0) estoque.materiais.push({id:eUid(),nome:nome,unidade:'kg'});
+      });
+    });
+    estoque._migCav2=true;
+  }
+  try{ localStorage.setItem('orc_estoque',JSON.stringify(estoque)); }catch(e){}
+})();
+
+// ---- derivacoes ----
+function eLoteConsumido(id){ let t=0; estoque.saidas.forEach(s=>s.consumo.forEach(c=>{ if(c.loteId===id) t+=c.quantidade; })); return t; }
+function eLoteRestante(l){ return Math.max(0, l.quantidade - eLoteConsumido(l.id)); }
+function eMat(id){ return estoque.materiais.find(m=>m.id===id); }
+function eLotesDoMat(id){ return estoque.lotes.filter(l=>l.materialId===id).sort((a,b)=> a.data<b.data?-1:a.data>b.data?1:0); }
+function eResumo(id){ let saldo=0,valor=0; eLotesDoMat(id).forEach(l=>{ const r=eLoteRestante(l); saldo+=r; valor+=r*l.valorUnitario; }); return {saldo:saldo,valor:valor,media:saldo>0?valor/saldo:0}; }
+function eTotalGeral(){ return estoque.materiais.reduce((t,m)=>t+eResumo(m.id).valor,0); }
+function eCustoSaida(s){ return s.consumo.reduce((t,c)=>{ const l=estoque.lotes.find(x=>x.id===c.loteId); return t+(l?c.quantidade*l.valorUnitario:0); },0); }
+
+// ---- formatacao ----
+function eQ(n){ return (n||0).toLocaleString('pt-BR',{maximumFractionDigits:3}); }
+function eVUin(n){ return n>0 ? n.toFixed(2).replace('.',',') : ''; }
+function eData(iso){ if(!iso) return ''; const a=iso.split('-'); return a[2]+'/'+a[1]; }
+function eHoje(){ return new Date().toISOString().slice(0,10); }
+function eToast(msg){ let t=document.querySelector('.est-toast'); if(!t){ t=document.createElement('div'); t.className='est-toast'; document.body.appendChild(t); } t.textContent=msg; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('show'),2200); }
+
+// ---- retorno (cavaco/sucata) ----
+const E_LOSS=0.15;
+function eIsRetorno(nome){ return /^(cavaco|sucata)\b/i.test((nome||'').trim()); }
+function eAluminio(nome){ return /alum[ií]nio/i.test(nome||''); }
+function eLigaDoNome(nome){ const m=(nome||'').match(/SAE\s*620|SAE\s*65|TM23/i); return m?m[0].toUpperCase().replace(/\s+/g,' '):''; }
+function eMediaLingote(liga){ const lin=estoque.materiais.find(m=>/^lingote/i.test(m.nome)&&eLigaDoNome(m.nome)===liga.toUpperCase()); return lin?eResumo(lin.id).media:0; }
+
+// ---- render principal ----
+function renderEstoque(){ $("estTotal").textContent=brl(eTotalGeral()); eRenderLista(); eFillSelects(); }
+function eRenderLista(){
+  const box=$("estLista"); box.innerHTML='';
+  estoque.materiais.forEach(m=>{
+    const r=eResumo(m.id);
+    const lotes=eLotesDoMat(m.id).filter(l=>eLoteRestante(l)>0).map(l=>{
+      const rest=eLoteRestante(l);
+      return '<div class="est-lote"><span class="l">'+eData(l.data)+' · '+(l.fornecedor||'—')+(l.nf?' · NF '+l.nf:'')+'</span>'
+           + '<span class="r">'+brl(l.valorUnitario)+'/'+m.unidade+'<br>'+eQ(rest)+' '+m.unidade+'</span></div>';
+    }).join('') || '<div class="est-empty">Sem lotes em aberto.</div>';
+    const el=document.createElement('div'); el.className='est-mat';
+    el.innerHTML='<div class="est-mat-head"><div><div class="est-mat-name">'+m.nome+'</div>'
+      +'<div class="est-mat-sub">'+eQ(r.saldo)+' '+m.unidade+' · média '+brl(r.media)+'/'+m.unidade+'</div></div>'
+      +'<div class="est-mat-val"><b>'+brl(r.valor)+'</b><small>em estoque</small></div></div>'
+      +'<div class="est-lotes">'+lotes+'</div>';
+    el.querySelector('.est-mat-head').addEventListener('click',()=>el.classList.toggle('open'));
+    box.appendChild(el);
+  });
+}
+function eFillSelects(){
+  const opts=estoque.materiais.map(m=>'<option value="'+m.id+'">'+m.nome+'</option>').join('');
+  const e=$("estMat"), b=$("estbMat"), f=$("estHFiltro");
+  const ev=e.value, bv=b.value, fv=f.value;
+  e.innerHTML=opts; b.innerHTML=opts; f.innerHTML='<option value="">Todos os materiais</option>'+opts;
+  if(ev) e.value=ev; if(bv) b.value=bv; if(fv) f.value=fv;
+}
+
+// ---- ENTRADA ----
+function eCalcEntrada(){ $("estTotalRem").textContent=brl(num($("estQtd").value)*num($("estVu").value)); }
+function eAplicaCredito(){
+  const preco=num($("estMetal").value), vu=preco*(1-E_LOSS);
+  $("estVu").value=eVUin(vu);
+  $("estCredCalc").textContent = preco>0 ? (brl(preco)+' − 15% = '+brl(vu)+'/kg') : '';
+  eCalcEntrada();
+}
+function eAtualizaEntrada(){
+  const m=eMat($("estMat").value), nome=m?m.nome:'';
+  document.querySelectorAll('#tab-estoque .estUn').forEach(x=>x.textContent=m?m.unidade:'kg');
+  const retorno=eIsRetorno(nome), alu=eAluminio(nome), bronzeRet=retorno&&!alu;
+  $("estCredito").hidden=!bronzeRet;
+  $("estAlHint").hidden=!(retorno&&alu);
+  if(bronzeRet){
+    const liga=eLigaDoNome(nome)||'SAE 620';
+    $("estRef").value=liga;
+    $("estMetal").value=eVUin(eMediaLingote(liga));
+    eAplicaCredito();
+  }
+}
+
+// ---- BAIXA ----
+function eRenderBaixaLotes(){
+  const m=eMat($("estbMat").value), box=$("estbLotes"); box.innerHTML='';
+  if(!m){ box.innerHTML='<div class="est-empty">Escolha um material.</div>'; return; }
+  const abertos=eLotesDoMat(m.id).filter(l=>eLoteRestante(l)>0);
+  if(abertos.length===0){ box.innerHTML='<div class="est-empty">Sem saldo neste material.</div>'; eCalcBaixa(); return; }
+  abertos.forEach(l=>{
+    const rest=eLoteRestante(l), div=document.createElement('div'); div.className='est-pick';
+    div.innerHTML='<div class="i">'+eData(l.data)+' · '+(l.fornecedor||'—')+(l.nf?' · NF '+l.nf:'')
+      +'<br><small>'+brl(l.valorUnitario)+'/'+m.unidade+' · resta '+eQ(rest)+' '+m.unidade+'</small></div>'
+      +'<input class="estUse" inputmode="decimal" placeholder="0" data-lote="'+l.id+'" data-max="'+rest+'" data-vu="'+l.valorUnitario+'">';
+    box.appendChild(div);
+  });
+  box.querySelectorAll('.estUse').forEach(i=>i.addEventListener('input',eCalcBaixa));
+  eCalcBaixa();
+}
+function eCalcBaixa(){
+  let q=0,v=0;
+  document.querySelectorAll('#estbLotes .estUse').forEach(i=>{ const n=num(i.value); q+=n; v+=n*parseFloat(i.dataset.vu); });
+  const m=eMat($("estbMat").value);
+  $("estbTotal").textContent=eQ(q)+' '+(m?m.unidade:'kg')+' · '+brl(v);
+}
+
+// ---- HISTORICO ----
+function eRenderHist(){
+  const box=$("estHLista"); box.innerHTML=''; const filtro=$("estHFiltro").value;
+  const items=[];
+  estoque.lotes.forEach(l=>items.push({tipo:'in',data:l.data,ref:l}));
+  estoque.saidas.forEach(s=>items.push({tipo:'out',data:s.data,ref:s}));
+  items.sort((a,b)=> a.data<b.data?1:a.data>b.data?-1:0);
+  const vis=items.filter(it=> !filtro || it.ref.materialId===filtro );
+  if(vis.length===0){ box.innerHTML='<div class="est-empty">Nenhum movimento.</div>'; return; }
+  vis.forEach(it=>{
+    const el=document.createElement('div'); el.className='est-mv';
+    if(it.tipo==='in'){
+      const l=it.ref, m=eMat(l.materialId);
+      el.innerHTML='<div class="est-cbar in"></div><div class="b"><div class="t">Entrada · '+(m?m.nome:'?')+'</div>'
+        +'<div class="d">'+eData(l.data)+' · '+eQ(l.quantidade)+' '+(m?m.unidade:'')+' × '+brl(l.valorUnitario)+(l.fornecedor?' · '+l.fornecedor:'')+(l.nf?' · NF '+l.nf:'')+'</div></div>'
+        +'<div class="v in">+'+brl(l.quantidade*l.valorUnitario)+'</div><button class="est-del" title="Excluir">×</button>';
+      el.querySelector('.est-del').addEventListener('click',()=>{
+        if(eLoteConsumido(l.id)>0){ eToast('Lote já teve baixa. Exclua a baixa antes.'); return; }
+        if(confirm('Excluir esta entrada?')){ estoque.lotes=estoque.lotes.filter(x=>x.id!==l.id); persistEstoque(); renderEstoque(); eRenderHist(); }
+      });
+    } else {
+      const s=it.ref, m=eMat(s.materialId);
+      const det=s.consumo.map(c=>{ const l=estoque.lotes.find(x=>x.id===c.loteId); return l?(eQ(c.quantidade)+' '+(m?m.unidade:'')+' @ '+brl(l.valorUnitario)+' ('+eData(l.data)+')'):''; }).filter(Boolean).join(' · ');
+      const qTot=s.consumo.reduce((t,c)=>t+c.quantidade,0);
+      el.innerHTML='<div class="est-cbar out"></div><div class="b"><div class="t">Baixa · '+(m?m.nome:'?')+(s.orcamento?' · orç. '+s.orcamento:'')+'</div>'
+        +'<div class="d">'+eData(s.data)+' · '+eQ(qTot)+' '+(m?m.unidade:'')+' · '+det+(s.obs?' · '+s.obs:'')+'</div></div>'
+        +'<div class="v out">−'+brl(eCustoSaida(s))+'</div><button class="est-del" title="Excluir">×</button>';
+      el.querySelector('.est-del').addEventListener('click',()=>{
+        if(confirm('Excluir esta baixa? O metal volta ao saldo do lote.')){ estoque.saidas=estoque.saidas.filter(x=>x.id!==s.id); persistEstoque(); renderEstoque(); eRenderHist(); }
+      });
+    }
+    box.appendChild(el);
+  });
+}
+
+// ---- eventos ----
+document.querySelectorAll('#tab-estoque .est-tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#tab-estoque .est-tab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  ['estoque','entrada','baixa','hist'].forEach(v=> $('est-'+v).hidden = v!==b.dataset.est );
+  if(b.dataset.est==='baixa') eRenderBaixaLotes();
+  if(b.dataset.est==='hist') eRenderHist();
+}));
+$("estQtd").addEventListener('input',eCalcEntrada);
+$("estVu").addEventListener('input',eCalcEntrada);
+$("estMetal").addEventListener('input',eAplicaCredito);
+$("estRef").addEventListener('change',()=>{ $("estMetal").value=eVUin(eMediaLingote($("estRef").value)); eAplicaCredito(); });
+$("estMat").addEventListener('change',eAtualizaEntrada);
+$("estbMat").addEventListener('change',eRenderBaixaLotes);
+$("estHFiltro").addEventListener('change',eRenderHist);
+$("estSave").addEventListener('click',()=>{
+  const mid=$("estMat").value, q=num($("estQtd").value), v=num($("estVu").value);
+  if(!mid) return eToast('Escolha o material.');
+  if(q<=0)  return eToast('Quantidade inválida.');
+  if(v<=0)  return eToast('Valor unitário inválido.');
+  estoque.lotes.push({id:eUid(),materialId:mid,data:$("estData").value||eHoje(),fornecedor:$("estForn").value.trim(),nf:$("estNf").value.trim(),quantidade:q,valorUnitario:v});
+  persistEstoque(); renderEstoque();
+  $("estQtd").value=''; $("estVu").value=''; $("estNf").value=''; eCalcEntrada();
+  eToast('Remessa registrada.');
+});
+$("estbSave").addEventListener('click',()=>{
+  const mid=$("estbMat").value, orc=$("estbOrc").value.trim();
+  if(!mid) return eToast('Escolha o material.');
+  const consumo=[]; let erro='';
+  document.querySelectorAll('#estbLotes .estUse').forEach(i=>{ const n=num(i.value), max=parseFloat(i.dataset.max);
+    if(n>0){ if(n>max+1e-9) erro='Quantidade maior que o saldo do lote.'; consumo.push({loteId:i.dataset.lote,quantidade:n}); } });
+  if(erro) return eToast(erro);
+  if(consumo.length===0) return eToast('Informe a quantidade em algum lote.');
+  estoque.saidas.push({id:eUid(),materialId:mid,orcamento:orc,data:$("estbData").value||eHoje(),obs:$("estbObs").value.trim(),consumo:consumo});
+  persistEstoque(); renderEstoque();
+  $("estbOrc").value=''; $("estbObs").value=''; eRenderBaixaLotes();
+  eToast('Baixa registrada.');
+});
+$("estAddMat").addEventListener('click',()=>{
+  const nome=prompt('Nome do material (ex.: Fósforo-cobre, Resina RS 3070):'); if(!nome) return;
+  const un=prompt('Unidade (kg, L, un):','kg')||'kg';
+  estoque.materiais.push({id:eUid(),nome:nome.trim(),unidade:un.trim()});
+  persistEstoque(); renderEstoque(); eToast('Material adicionado.');
+});
+$("estData").value=eHoje(); $("estbData").value=eHoje();
+eAtualizaEntrada();
+
 // ================= CENTRAL NA NUVEM (Supabase) =================
 const SB_URL="https://xexkalwcsbwtklkctgze.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhleGthbHdjc2J3dGtsa2N0Z3plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODExMjQsImV4cCI6MjEwMzM1NzEyNH0.BtyUjToVMDyqB0AlcJ2dUTh9Gv18OVPAkcSEMAJaZBE";
@@ -1496,7 +1846,7 @@ async function nuvemCarregar(){
   return (arr&&arr[0])||null;
 }
 async function nuvemSalvar(){
-  const body=[{id:SB_ID, dados:{saved,seq,clientes}, atualizado_em:new Date().toISOString()}];
+  const body=[{id:SB_ID, dados:{saved,seq,clientes,estoque}, atualizado_em:new Date().toISOString()}];
   const r=await fetch(`${SB_URL}/rest/v1/${SB_TABLE}`,{
     method:"POST",
     headers:{...SB_HEAD, Prefer:"resolution=merge-duplicates,return=minimal"},
@@ -1527,10 +1877,12 @@ async function iniciarNuvem(){
       if(Array.isArray(d.saved)){ saved.length=0; d.saved.forEach(x=>saved.push(x)); }
       if(d.seq && typeof d.seq==="object"){ Object.keys(seq).forEach(k=>delete seq[k]); Object.assign(seq,d.seq); }
       if(Array.isArray(d.clientes)){ clientes.length=0; d.clientes.forEach(x=>clientes.push(x)); try{ localStorage.setItem("orc_clientes",JSON.stringify(clientes)); }catch(e){} }
+      if(d.estoque && typeof d.estoque==="object"){ aplicarEstoqueNuvem(d.estoque); }
       try{ localStorage.setItem("orc_fund",JSON.stringify(saved)); localStorage.setItem("orc_fund_seq",JSON.stringify(seq)); }catch(e){}
       aplicandoNuvem=false;
       renderSaved();
       if(typeof renderClientes==="function") renderClientes();
+      if(typeof renderEstoque==="function") renderEstoque();
       marcaSync("ok");
     } else {
       // central ainda vazia: sobe o que existe no aparelho pra iniciar
@@ -1594,6 +1946,7 @@ try{ const c=localStorage.getItem('jrw_cfg'); if(c) escreverCfg(JSON.parse(c)); 
 CFG_CAMPOS.concat('propValidade').forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',persistCfg); });
 renderSaved();
 if(typeof renderClientes==="function") renderClientes();
+renderEstoque();
 calc();
 iniciarNuvem();   // carrega da central e mantém sincronizado
 </script>
