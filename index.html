@@ -158,7 +158,9 @@
   .qlogo{height:66px;width:auto;border-radius:8px;display:block}
 
   /* ---- abas ---- */
-  .tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+  .tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{white-space:nowrap;flex:none}
   .tab{background:none;border:none;color:var(--muted);font-family:"Archivo";font-weight:700;
     font-size:13px;letter-spacing:.1em;text-transform:uppercase;padding:12px 16px;cursor:pointer;
     border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -323,6 +325,7 @@
   <button class="tab" data-tab="saved">Salvos <span class="badge" id="savedCount">0</span></button>
   <button class="tab" data-tab="clientes">Clientes <span class="badge" id="clientesCount">0</span></button>
   <button class="tab" data-tab="estoque">Estoque</button>
+  <button class="tab" data-tab="forno">Controle de forno</button>
 </nav>
 
 <div id="tab-calc">
@@ -781,6 +784,124 @@
   </section>
 </div>
 
+
+<style>
+/* ===== Controle de forno ===== */
+#tab-forno .fo-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+#tab-forno .fo-k{color:var(--muted);font-size:12px;letter-spacing:.03em}
+#tab-forno .fo-big{font-family:"Archivo",system-ui,sans-serif;font-size:26px;font-weight:800;color:var(--bronze);font-variant-numeric:tabular-nums}
+#tab-forno .fo-sub{display:flex;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px}
+#tab-forno .fo-tab{flex:1;border:0;background:none;color:var(--muted);padding:9px 8px;border-radius:9px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+#tab-forno .fo-tab.on{background:var(--panel);color:var(--ink)}
+#tab-forno label{display:block;color:var(--muted);font-size:12px;margin:10px 0 4px}
+#tab-forno input,#tab-forno select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:10px 12px;font:inherit;font-size:15px}
+#tab-forno input:focus,#tab-forno select:focus{outline:none;border-color:var(--bronze)}
+#tab-forno .fo-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#tab-forno .fo-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+#tab-forno .fo-btn{width:100%;margin-top:16px;padding:13px;border:0;border-radius:10px;background:var(--bronze);color:#1a1206;font-weight:800;font-size:15px;cursor:pointer}
+#tab-forno .fo-btn.sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+#tab-forno .fo-btn.del{background:none;color:var(--bad);border:1px solid var(--bad)}
+#tab-forno .fo-hint{color:var(--muted);font-size:12px;margin-top:6px}
+#tab-forno .fo-filt{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+#tab-forno .fo-filt select{font-size:13px;padding:8px 10px}
+#tab-forno .fo-card{border:1px solid var(--line);border-left:5px solid var(--line);border-radius:12px;background:var(--panel2);padding:12px 14px;margin-bottom:10px;cursor:pointer}
+#tab-forno .fo-card.aberta{border-left-color:var(--molten1)}
+#tab-forno .fo-card.ok{border-left-color:var(--good)}
+#tab-forno .fo-card.alerta{border-left-color:var(--bad)}
+#tab-forno .fo-ct{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+#tab-forno .fo-ct b{font-family:"Archivo";font-size:16px}
+#tab-forno .fo-cs{color:var(--muted);font-size:12px;margin-top:2px}
+#tab-forno .fo-cn{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;color:var(--muted)}
+#tab-forno .fo-cn span b{display:block;color:var(--ink);font-family:"JetBrains Mono",monospace;font-size:13px}
+#tab-forno .fo-tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+#tab-forno .fo-tag.aberta{color:var(--molten1);border-color:var(--molten1)}
+#tab-forno .fo-tag.bad{color:var(--bad);border-color:var(--bad)}
+#tab-forno .fo-tag.ok{color:var(--good);border-color:var(--good)}
+#tab-forno .fo-sec{margin-top:18px}
+#tab-forno .fo-sec h3{font-family:"Archivo";font-size:14px;letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:baseline}
+#tab-forno .fo-sec h3 span{font-family:"JetBrains Mono",monospace;color:var(--bronze);font-size:14px;letter-spacing:0;text-transform:none}
+#tab-forno .fo-ln{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}
+#tab-forno .fo-ln .i{flex:1;min-width:0}
+#tab-forno .fo-ln .i small{display:block;color:var(--muted);font-size:11px}
+#tab-forno .fo-ln .k{font-family:"JetBrains Mono",monospace;white-space:nowrap}
+#tab-forno .fo-x{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+#tab-forno .fo-add{display:grid;grid-template-columns:1.3fr .8fr 1.2fr auto;gap:6px;margin-top:10px;align-items:end}
+#tab-forno .fo-add input,#tab-forno .fo-add select{font-size:14px;padding:9px 8px}
+#tab-forno .fo-add button{padding:10px 14px;border:0;border-radius:9px;background:var(--bronze);color:#1a1206;font-weight:800;font-size:16px;cursor:pointer}
+#tab-forno .fo-bal{margin-top:18px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+#tab-forno .fo-bal .r{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:14px;border-bottom:1px solid var(--line)}
+#tab-forno .fo-bal .r:last-child{border-bottom:0}
+#tab-forno .fo-bal .r b{font-family:"JetBrains Mono",monospace;white-space:nowrap}
+#tab-forno .fo-bal .r.hl{font-weight:700}
+#tab-forno .fo-bal .r.hl b{color:var(--bronze)}
+#tab-forno .fo-bal .r.bad b{color:var(--bad)}
+#tab-forno .fo-alert{margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--bad);color:var(--bad);font-size:13px;font-weight:600}
+#tab-forno .fo-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+#tab-forno .fo-tbl th{color:var(--muted);font-weight:600;text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
+#tab-forno .fo-tbl th:first-child,#tab-forno .fo-tbl td:first-child{text-align:left}
+#tab-forno .fo-tbl td{text-align:right;padding:7px 4px;border-bottom:1px dashed var(--line);font-family:"JetBrains Mono",monospace;white-space:nowrap}
+#tab-forno .fo-tbl td:first-child{font-family:inherit;white-space:normal}
+#tab-forno .fo-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#tab-forno .fo-empty{color:var(--muted);font-size:13px;padding:6px 0}
+#tab-forno .fo-back{background:none;border:0;color:var(--bronze);font:inherit;font-weight:700;cursor:pointer;padding:0;margin-bottom:10px}
+@media (max-width:420px){ #tab-forno .fo-add{grid-template-columns:1fr 1fr} #tab-forno .fo-add button{width:100%} #tab-forno .fo-filt{grid-template-columns:1fr 1fr} }
+</style>
+
+<div id="tab-forno" hidden>
+  <div class="fo-head">
+    <div><div class="fo-k">Perda média (fornadas fechadas)</div><div class="fo-big" id="foPerdaMedia">—</div></div>
+    <div style="text-align:right"><div class="fo-k">Fornadas</div><div class="fo-big" id="foQtd" style="color:var(--ink)">0</div></div>
+  </div>
+
+  <nav class="fo-sub">
+    <button class="fo-tab on" data-fo="lista">Fornadas</button>
+    <button class="fo-tab" data-fo="nova">Nova fornada</button>
+    <button class="fo-tab" data-fo="resumo">Resumo</button>
+  </nav>
+
+  <section class="panel fo-view" id="fo-lista">
+    <div class="fo-filt">
+      <select id="foFForno"></select>
+      <select id="foFLiga"></select>
+      <select id="foFStatus">
+        <option value="">Todas</option>
+        <option value="aberta">Abertas</option>
+        <option value="fechada">Fechadas</option>
+      </select>
+    </div>
+    <div id="foLista"></div>
+  </section>
+
+  <section class="panel fo-view" id="fo-det" hidden></section>
+
+  <section class="panel fo-view" id="fo-nova" hidden>
+    <div class="fo-row2">
+      <div><label>Nº da fornada</label><input id="foNNum" inputmode="numeric"></div>
+      <div><label>Data</label><input type="date" id="foNData"></div>
+    </div>
+    <div class="fo-row2">
+      <div><label>Forno</label><select id="foNForno"></select></div>
+      <div><label>Liga</label><select id="foNLiga"></select></div>
+    </div>
+    <label>Forneiro / responsável</label>
+    <input id="foNOper" list="foOperList" placeholder="quem carregou e vazou" autocomplete="off">
+    <datalist id="foOperList"></datalist>
+    <label>Observação (opcional)</label>
+    <input id="foNObs" placeholder="OS / peças previstas">
+    <button class="fo-btn" id="foNSave">Abrir fornada</button>
+    <div class="fo-hint">Depois de abrir, lance o que entrou no forno (pesado na balança) e, ao final, tudo o que saiu.</div>
+    <button class="fo-btn sec" id="foAddForno" style="margin-top:22px">+ Cadastrar forno</button>
+  </section>
+
+  <section class="panel fo-view" id="fo-resumo" hidden>
+    <div class="fo-row2">
+      <div><label>Mês</label><input type="month" id="foRMes"></div>
+      <div><label>Alerta de diferença (%)</label><input id="foLimite" inputmode="decimal" placeholder="sem alerta fixo"></div>
+    </div>
+    <div class="fo-hint">Só entram fornadas fechadas. Mês em branco = todo o período. Sem limite fixo, o app marca a fornada cuja diferença passa da média das fornadas fechadas da mesma liga (com pelo menos 3).</div>
+    <div id="foResumo"></div>
+  </section>
+</div>
 
 <div class="foot">Fundição · Orçamento — todos os valores são editáveis. Funciona offline.</div>
 </div>
@@ -1366,6 +1487,8 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   $("tab-saved").hidden = t.dataset.tab!=="saved";
   $("tab-clientes").hidden = t.dataset.tab!=="clientes";
   $("tab-estoque").hidden = t.dataset.tab!=="estoque";
+  $("tab-forno").hidden = t.dataset.tab!=="forno";
+  if(t.dataset.tab==="forno"){ foShow(foAbertaId?"det":"lista"); renderForno(); }
   if(t.dataset.tab==="clientes") renderClientes();
   if(t.dataset.tab==="estoque") renderEstoque();
 }));
@@ -1943,6 +2066,250 @@ $("estTSave").addEventListener('click',()=>{
 $("estData").value=eHoje(); $("estbData").value=eHoje(); $("estTData").value=eHoje();
 eAtualizaEntrada();
 
+
+// ================= CONTROLE DE FORNO =================
+// Cada fornada: o que entrou (pesado) x o que saiu (pesado). Diferença = metal não pesado na saída.
+let forno = {fornos:['Forno 1'], fornadas:[], seq:0, limite:''};
+try{ const s=localStorage.getItem('jrw_forno'); if(s) forno=JSON.parse(s); }catch(e){}
+function foNormaliza(){
+  if(!Array.isArray(forno.fornos)||!forno.fornos.length) forno.fornos=['Forno 1'];
+  if(!Array.isArray(forno.fornadas)) forno.fornadas=[];
+  if(typeof forno.seq!=='number') forno.seq=0;
+  if(forno.limite==null) forno.limite='';
+  forno.fornadas.forEach(f=>{ if(!Array.isArray(f.entradas)) f.entradas=[]; if(!Array.isArray(f.saidas)) f.saidas=[]; });
+}
+foNormaliza();
+function persistForno(){ try{ localStorage.setItem('jrw_forno',JSON.stringify(forno)); }catch(e){} agendarSync(); }
+function aplicarFornoNuvem(d){
+  forno = {fornos:d.fornos, fornadas:d.fornadas, seq:d.seq, limite:d.limite};
+  foNormaliza();
+  try{ localStorage.setItem('jrw_forno',JSON.stringify(forno)); }catch(e){}
+}
+
+const FO_LIGAS=['SAE 620','SAE 65','TM23','Alumínio','Outra'];
+const FO_ENT=['Lingote','Sucata','Cavaco','Canal/massalote (retorno)','Outro'];
+// saídas: peças = produto; retorno = metal que volta (canal, massalote, sobra, respingo recolhido); borra = perda pesada
+const FO_SAI=['Peças','Canal/massalote','Sobra no cadinho','Respingo/derrame recolhido','Borra/escória'];
+function foGrupoSai(tipo){ if(tipo==='Peças') return 'pecas'; if(tipo==='Borra/escória') return 'borra'; return 'retorno'; }
+function foNum(n){ return String(n).padStart(2,'0'); }
+function foKg(n){ return (n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' kg'; }
+function foPct(n){ return isFinite(n)?(n*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'—'; }
+function foDataBR(iso){ if(!iso) return ''; const a=iso.split('-'); return a[2]+'/'+a[1]+'/'+a[0]; }
+function foHora(ts){ if(!ts) return ''; const d=new Date(ts); return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+
+function foCalc(f){
+  const ent=f.entradas.reduce((t,x)=>t+(x.kg||0),0);
+  let pecas=0,retorno=0,borra=0;
+  f.saidas.forEach(x=>{ const g=foGrupoSai(x.tipo); if(g==='pecas') pecas+=x.kg||0; else if(g==='borra') borra+=x.kg||0; else retorno+=x.kg||0; });
+  const sai=pecas+retorno+borra;
+  const dif=ent-sai;                 // metal que entrou e não foi pesado na saída
+  const perda=ent-pecas-retorno;     // metal perdido de fato = borra + diferença
+  return {ent,sai,pecas,retorno,borra,dif,perda,
+    pDif: ent>0?dif/ent:NaN, pPerda: ent>0?perda/ent:NaN, pRend: ent>0?pecas/ent:NaN, pBorra: ent>0?borra/ent:NaN};
+}
+function foFechadas(){ return forno.fornadas.filter(f=>f.status==='fechada'); }
+// média de diferença da liga (só fechadas, excluindo a própria)
+function foMediaDifLiga(liga, excluiId){
+  const l=foFechadas().filter(f=>f.liga===liga && f.id!==excluiId).map(foCalc).filter(c=>c.ent>0);
+  if(l.length<3) return null;
+  const e=l.reduce((t,c)=>t+c.ent,0), d=l.reduce((t,c)=>t+c.dif,0);
+  return e>0?d/e:null;
+}
+function foAlerta(f){
+  if(f.status!=='fechada') return '';
+  const c=foCalc(f); if(!(c.ent>0)) return '';
+  if(c.dif<0) return 'Saiu mais do que entrou ('+foKg(-c.dif)+'): confira as pesagens ou se faltou lançar alguma entrada.';
+  const lim=num(forno.limite);
+  if(lim>0){ if(c.pDif*100>lim) return 'Diferença de '+foPct(c.pDif)+' acima do limite de '+String(forno.limite).replace('.',',')+'%.'; return ''; }
+  const m=foMediaDifLiga(f.liga,f.id);
+  if(m!=null && c.pDif>m*1.5 && c.dif>0) return 'Diferença de '+foPct(c.pDif)+' — acima de 1,5× a média da liga '+f.liga+' ('+foPct(m)+').';
+  return '';
+}
+
+let foAbertaId=null;
+function foShow(v){
+  ['lista','det','nova','resumo'].forEach(x=>$('fo-'+x).hidden = x!==v);
+  document.querySelectorAll('#tab-forno .fo-tab').forEach(b=>b.classList.toggle('on', b.dataset.fo===v || (v==='det'&&b.dataset.fo==='lista')));
+}
+function renderForno(){
+  const fe=foFechadas().map(foCalc).filter(c=>c.ent>0);
+  const E=fe.reduce((t,c)=>t+c.ent,0), P=fe.reduce((t,c)=>t+c.perda,0);
+  $("foPerdaMedia").textContent = E>0?foPct(P/E):'—';
+  $("foQtd").textContent = forno.fornadas.length;
+  foFillSelects();
+  foRenderLista();
+  if(!$('fo-det').hidden && foAbertaId) foRenderDet();
+  if(!$('fo-resumo').hidden) foRenderResumo();
+}
+function foFillSelects(){
+  const keep=(id,html)=>{ const el=$(id); const v=el.value; el.innerHTML=html; if([...el.options].some(o=>o.value===v)) el.value=v; };
+  keep('foFForno','<option value="">Todos os fornos</option>'+forno.fornos.map(n=>'<option>'+esc(n)+'</option>').join(''));
+  keep('foFLiga','<option value="">Todas as ligas</option>'+FO_LIGAS.map(n=>'<option>'+n+'</option>').join(''));
+  keep('foNForno',forno.fornos.map(n=>'<option>'+esc(n)+'</option>').join(''));
+  keep('foNLiga',FO_LIGAS.map(n=>'<option>'+n+'</option>').join(''));
+  const ops=[...new Set(forno.fornadas.map(f=>(f.operador||'').trim()).filter(Boolean))];
+  $("foOperList").innerHTML=ops.map(o=>'<option value="'+esc(o)+'">').join('');
+}
+function foRenderLista(){
+  const ff=$("foFForno").value, fl=$("foFLiga").value, fs=$("foFStatus").value;
+  const list=forno.fornadas.filter(f=>(!ff||f.forno===ff)&&(!fl||f.liga===fl)&&(!fs||f.status===fs))
+    .sort((a,b)=> (b.num||0)-(a.num||0));
+  const box=$("foLista");
+  if(!list.length){ box.innerHTML='<div class="fo-empty">Nenhuma fornada'+(forno.fornadas.length?' com esse filtro.':' ainda. Toque em "Nova fornada".')+'</div>'; return; }
+  box.innerHTML=list.map(f=>{
+    const c=foCalc(f), al=foAlerta(f);
+    const cls=f.status==='aberta'?'aberta':(al?'alerta':'ok');
+    const tag=f.status==='aberta'?'<span class="fo-tag aberta">aberta</span>':(al?'<span class="fo-tag bad">conferir</span>':'<span class="fo-tag ok">fechada</span>');
+    return '<div class="fo-card '+cls+'" data-foid="'+f.id+'">'
+      +'<div class="fo-ct"><b>Fornada '+foNum(f.num)+'</b>'+tag+'</div>'
+      +'<div class="fo-cs">'+foDataBR(f.data)+' · '+esc(f.forno)+' · '+esc(f.liga)+(f.operador?' · '+esc(f.operador):'')+'</div>'
+      +'<div class="fo-cn"><span>Entrou<b>'+foKg(c.ent)+'</b></span><span>Peças<b>'+foKg(c.pecas)+'</b></span>'
+      +'<span>Perda<b>'+(f.status==='fechada'?foPct(c.pPerda):'—')+'</b></span></div></div>';
+  }).join('');
+}
+
+function foRenderDet(){
+  const f=forno.fornadas.find(x=>x.id===foAbertaId); const box=$('fo-det');
+  if(!f){ foShow('lista'); return; }
+  const ab=f.status==='aberta', c=foCalc(f), al=foAlerta(f);
+  const linhas=(arr,kind)=> arr.length? arr.map(x=>'<div class="fo-ln"><div class="i">'+esc(x.tipo)+(x.obs?' · '+esc(x.obs):'')+'<small>'+foHora(x.em)+(x.por?' · '+esc(x.por):'')+'</small></div><span class="k">'+foKg(x.kg)+'</span>'
+      +(ab?'<button class="fo-x" data-fodel="'+kind+'" data-lid="'+x.id+'" title="excluir">×</button>':'')+'</div>').join('')
+    : '<div class="fo-empty">Nada lançado.</div>';
+  const add=(kind,tipos,ph)=> ab? '<div class="fo-add">'
+      +'<div><label>Tipo</label><select id="foA'+kind+'Tipo">'+tipos.map(t=>'<option>'+t+'</option>').join('')+'</select></div>'
+      +'<div><label>Peso (kg)</label><input id="foA'+kind+'Kg" inputmode="decimal" placeholder="0,00"></div>'
+      +'<div><label>Obs.</label><input id="foA'+kind+'Obs" placeholder="'+ph+'"></div>'
+      +'<button data-foadd="'+kind+'">+</button></div>' : '';
+  const cab = ab
+    ? '<div class="fo-row2"><div><label>Data</label><input type="date" id="foDData" value="'+(f.data||'')+'"></div>'
+      +'<div><label>Forneiro / responsável</label><input id="foDOper" list="foOperList" value="'+esc(f.operador||'')+'"></div></div>'
+      +'<div class="fo-row2"><div><label>Forno</label><select id="foDForno">'+forno.fornos.map(n=>'<option'+(n===f.forno?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select></div>'
+      +'<div><label>Liga</label><select id="foDLiga">'+FO_LIGAS.map(n=>'<option'+(n===f.liga?' selected':'')+'>'+n+'</option>').join('')+'</select></div></div>'
+      +'<label>Observação</label><input id="foDObs" value="'+esc(f.obs||'')+'">'
+    : '<div class="fo-cs" style="font-size:13px">'+foDataBR(f.data)+' · '+esc(f.forno)+' · '+esc(f.liga)+(f.operador?' · '+esc(f.operador):'')+(f.obs?'<br>'+esc(f.obs):'')
+      +'<br>Fechada em '+foHora(f.fechadaEm)+'</div>';
+  box.innerHTML='<button class="fo-back" id="foVoltar">← Fornadas</button>'
+    +'<div class="fo-ct"><b style="font-size:20px">Fornada '+foNum(f.num)+'</b>'+(ab?'<span class="fo-tag aberta">aberta</span>':'<span class="fo-tag '+(al?'bad':'ok')+'">fechada</span>')+'</div>'
+    +cab
+    +'<div class="fo-sec"><h3>Entrou no forno <span>'+foKg(c.ent)+'</span></h3>'+linhas(f.entradas,'E')+add('E',FO_ENT,'lote / NF')+'</div>'
+    +'<div class="fo-sec"><h3>Saiu do forno <span>'+foKg(c.sai)+'</span></h3>'+linhas(f.saidas,'S')+add('S',FO_SAI,'OS / peça')+'</div>'
+    +'<div class="fo-bal">'
+      +'<div class="r"><span>Entrou</span><b>'+foKg(c.ent)+'</b></div>'
+      +'<div class="r"><span>Peças</span><b>'+foKg(c.pecas)+' · '+foPct(c.pRend)+'</b></div>'
+      +'<div class="r"><span>Retorno ao forno</span><b>'+foKg(c.retorno)+'</b></div>'
+      +'<div class="r"><span>Borra / escória</span><b>'+foKg(c.borra)+' · '+foPct(c.pBorra)+'</b></div>'
+      +'<div class="r '+(c.dif<0?'bad':'')+'"><span>Diferença não pesada</span><b>'+foKg(c.dif)+' · '+foPct(c.pDif)+'</b></div>'
+      +'<div class="r hl"><span>Perda real</span><b>'+foKg(c.perda)+' · '+foPct(c.pPerda)+'</b></div>'
+    +'</div>'
+    +(al?'<div class="fo-alert">⚠ '+esc(al)+'</div>':'')
+    +(ab?'<button class="fo-btn" id="foFechar">Fechar fornada</button>':'<button class="fo-btn sec" id="foReabrir">Reabrir para corrigir</button>')
+    +'<button class="fo-btn sec" id="foShare">Compartilhar resumo</button>'
+    +'<button class="fo-btn del" id="foExcluir">Excluir fornada</button>';
+}
+function foAbrir(id){ foAbertaId=id; foShow('det'); foRenderDet(); window.scrollTo(0,0); }
+function foTexto(f){
+  const c=foCalc(f);
+  return 'JRW Fundição — Fornada '+foNum(f.num)+'\n'+foDataBR(f.data)+' · '+f.forno+' · '+f.liga+(f.operador?' · '+f.operador:'')
+    +'\n\nENTROU: '+foKg(c.ent)+'\n'+f.entradas.map(x=>'- '+x.tipo+(x.obs?' ('+x.obs+')':'')+': '+foKg(x.kg)).join('\n')
+    +'\n\nSAIU: '+foKg(c.sai)+'\n'+f.saidas.map(x=>'- '+x.tipo+(x.obs?' ('+x.obs+')':'')+': '+foKg(x.kg)).join('\n')
+    +'\n\nPeças: '+foKg(c.pecas)+' ('+foPct(c.pRend)+')\nBorra: '+foKg(c.borra)+' ('+foPct(c.pBorra)+')\nDiferença não pesada: '+foKg(c.dif)+' ('+foPct(c.pDif)+')\nPERDA REAL: '+foKg(c.perda)+' ('+foPct(c.pPerda)+')';
+}
+
+function foRenderResumo(){
+  const mes=$("foRMes").value;
+  const list=foFechadas().filter(f=>!mes||(f.data||'').slice(0,7)===mes);
+  const box=$("foResumo");
+  if(!list.length){ box.innerHTML='<div class="fo-empty" style="margin-top:12px">Nenhuma fornada fechada no período.</div>'; return; }
+  const tabela=(titulo,chave)=>{
+    const g={}; list.forEach(f=>{ const k=chave(f)||'—'; (g[k]=g[k]||[]).push(foCalc(f)); });
+    const rows=Object.keys(g).sort().map(k=>{
+      const a=g[k], E=a.reduce((t,c)=>t+c.ent,0), P=a.reduce((t,c)=>t+c.pecas,0), D=a.reduce((t,c)=>t+c.dif,0), L=a.reduce((t,c)=>t+c.perda,0);
+      return '<tr><td>'+esc(k)+'</td><td>'+a.length+'</td><td>'+eQ(E)+'</td><td>'+foPct(E>0?P/E:NaN)+'</td><td>'+foPct(E>0?D/E:NaN)+'</td><td><b>'+foPct(E>0?L/E:NaN)+'</b></td></tr>';
+    }).join('');
+    return '<div class="fo-sec"><h3>'+titulo+'</h3><div class="fo-scroll"><table class="fo-tbl"><thead><tr><th></th><th>Forn.</th><th>Entrou kg</th><th>Rend.</th><th>Dif.</th><th>Perda</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  };
+  const alertas=list.filter(f=>foAlerta(f)).sort((a,b)=>b.num-a.num);
+  box.innerHTML=tabela('Por forno',f=>f.forno)+tabela('Por liga',f=>f.liga)+tabela('Por forneiro',f=>f.operador)
+    +'<div class="fo-sec"><h3>Fornadas para conferir <span>'+alertas.length+'</span></h3>'
+    +(alertas.length?alertas.map(f=>'<div class="fo-ln" data-foid="'+f.id+'" style="cursor:pointer"><div class="i">Fornada '+foNum(f.num)+' · '+esc(f.forno)+' · '+esc(f.liga)+'<small>'+esc(foAlerta(f))+'</small></div></div>').join(''):'<div class="fo-empty">Nenhuma.</div>')
+    +'</div><div class="fo-hint" style="margin-top:12px">Rend. = peças ÷ entrou · Dif. = metal que entrou e não foi pesado na saída · Perda = borra + diferença.</div>';
+}
+
+// ---- eventos ----
+document.querySelectorAll('#tab-forno .fo-tab').forEach(b=>b.addEventListener('click',()=>{
+  const v=b.dataset.fo; foShow(v);
+  if(v==='nova'){ $("foNNum").value=forno.seq+1; if(!$("foNData").value) $("foNData").value=eHoje(); }
+  if(v==='resumo'){ $("foLimite").value=forno.limite||''; foRenderResumo(); }
+  if(v==='lista') foRenderLista();
+}));
+['foFForno','foFLiga','foFStatus'].forEach(id=>$(id).addEventListener('change',foRenderLista));
+$("foRMes").addEventListener('change',foRenderResumo);
+$("foLimite").addEventListener('change',()=>{ forno.limite=$("foLimite").value.trim(); persistForno(); foRenderResumo(); foRenderLista(); });
+$("foLista").addEventListener('click',e=>{ const c=e.target.closest('[data-foid]'); if(c) foAbrir(c.dataset.foid); });
+$("foResumo").addEventListener('click',e=>{ const c=e.target.closest('[data-foid]'); if(c) foAbrir(c.dataset.foid); });
+$("foAddForno").addEventListener('click',()=>{
+  const n=prompt('Nome do forno (ex.: Forno 2, Cadinho 150 kg):'); if(!n||!n.trim()) return;
+  if(forno.fornos.includes(n.trim())){ eToast('Esse forno já existe.'); return; }
+  forno.fornos.push(n.trim()); persistForno(); foFillSelects(); $("foNForno").value=n.trim(); eToast('Forno cadastrado.');
+});
+$("foNSave").addEventListener('click',()=>{
+  const n=parseInt($("foNNum").value,10);
+  if(!(n>0)){ eToast('Informe o número da fornada.'); return; }
+  if(forno.fornadas.some(f=>f.num===n)){ eToast('Já existe a fornada '+foNum(n)+'.'); return; }
+  const f={id:eUid(),num:n,data:$("foNData").value||eHoje(),forno:$("foNForno").value,liga:$("foNLiga").value,
+    operador:$("foNOper").value.trim(),obs:$("foNObs").value.trim(),status:'aberta',criadaEm:Date.now(),entradas:[],saidas:[]};
+  forno.fornadas.push(f); forno.seq=Math.max(forno.seq,n);
+  persistForno(); $("foNObs").value=''; eToast('Fornada '+foNum(n)+' aberta.'); renderForno(); foAbrir(f.id);
+});
+$('fo-det').addEventListener('click',e=>{
+  const f=forno.fornadas.find(x=>x.id===foAbertaId); if(!f) return;
+  const t=e.target;
+  if(t.id==='foVoltar'){ foAbertaId=null; foShow('lista'); foRenderLista(); return; }
+  if(t.dataset.foadd){
+    const k=t.dataset.foadd, kg=num($('foA'+k+'Kg').value);
+    if(!(kg>0)){ eToast('Informe o peso em kg.'); return; }
+    const ln={id:eUid(),tipo:$('foA'+k+'Tipo').value,kg:kg,obs:$('foA'+k+'Obs').value.trim(),em:Date.now()};
+    (k==='E'?f.entradas:f.saidas).push(ln); persistForno(); renderForno();
+    const nx=$('foA'+k+'Kg'); if(nx) nx.focus();
+    return;
+  }
+  if(t.dataset.fodel){
+    if(!confirm('Excluir este lançamento?')) return;
+    const arr=t.dataset.fodel==='E'?'entradas':'saidas'; f[arr]=f[arr].filter(x=>x.id!==t.dataset.lid); persistForno(); renderForno(); return;
+  }
+  if(t.id==='foFechar'){
+    if(!f.entradas.length){ eToast('Lance o que entrou no forno.'); return; }
+    if(!f.saidas.length){ eToast('Lance o que saiu do forno.'); return; }
+    const c=foCalc(f);
+    if(!confirm('Fechar a fornada '+foNum(f.num)+'?\n\nEntrou: '+foKg(c.ent)+'\nSaiu: '+foKg(c.sai)+'\nPerda real: '+foKg(c.perda)+' ('+foPct(c.pPerda)+')')) return;
+    f.status='fechada'; f.fechadaEm=Date.now(); persistForno(); renderForno(); eToast('Fornada fechada.'); return;
+  }
+  if(t.id==='foReabrir'){
+    if(!confirm('Reabrir a fornada '+foNum(f.num)+' para corrigir lançamentos?')) return;
+    f.status='aberta'; (f.reaberturas=f.reaberturas||[]).push(Date.now()); persistForno(); renderForno(); return;
+  }
+  if(t.id==='foExcluir'){
+    if(!confirm('Excluir a fornada '+foNum(f.num)+' e todos os lançamentos?')) return;
+    forno.fornadas=forno.fornadas.filter(x=>x.id!==f.id); foAbertaId=null; persistForno(); foShow('lista'); renderForno(); return;
+  }
+  if(t.id==='foShare'){
+    const txt=foTexto(f);
+    if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>eToast('Resumo copiado.')); }
+    return;
+  }
+});
+$('fo-det').addEventListener('change',e=>{
+  const f=forno.fornadas.find(x=>x.id===foAbertaId); if(!f||f.status!=='aberta') return;
+  const map={foDData:'data',foDOper:'operador',foDForno:'forno',foDLiga:'liga',foDObs:'obs'};
+  const k=map[e.target.id]; if(!k) return;
+  f[k]=e.target.value.trim(); persistForno(); foFillSelects(); foRenderLista();
+});
+$('fo-det').addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return; const m=(e.target.id||'').match(/^foA([ES])(Kg|Obs)$/); if(!m) return;
+  e.preventDefault(); const b=document.querySelector('#fo-det [data-foadd="'+m[1]+'"]'); if(b) b.click();
+});
+
 // ================= CENTRAL NA NUVEM (Supabase) =================
 const SB_URL="https://xexkalwcsbwtklkctgze.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhleGthbHdjc2J3dGtsa2N0Z3plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODExMjQsImV4cCI6MjEwMzM1NzEyNH0.BtyUjToVMDyqB0AlcJ2dUTh9Gv18OVPAkcSEMAJaZBE";
@@ -1968,7 +2335,7 @@ async function nuvemCarregar(){
   return (arr&&arr[0])||null;
 }
 async function nuvemSalvar(){
-  const body=[{id:SB_ID, dados:{saved,seq,clientes,estoque}, atualizado_em:new Date().toISOString()}];
+  const body=[{id:SB_ID, dados:{saved,seq,clientes,estoque,forno}, atualizado_em:new Date().toISOString()}];
   const r=await fetch(`${SB_URL}/rest/v1/${SB_TABLE}`,{
     method:"POST",
     headers:{...SB_HEAD, Prefer:"resolution=merge-duplicates,return=minimal"},
@@ -2000,12 +2367,17 @@ async function iniciarNuvem(){
       if(d.seq && typeof d.seq==="object"){ Object.keys(seq).forEach(k=>delete seq[k]); Object.assign(seq,d.seq); }
       if(Array.isArray(d.clientes)){ clientes.length=0; d.clientes.forEach(x=>clientes.push(x)); try{ localStorage.setItem("orc_clientes",JSON.stringify(clientes)); }catch(e){} }
       if(d.estoque && typeof d.estoque==="object"){ aplicarEstoqueNuvem(d.estoque); }
+      let fornoFaltaNaNuvem=false;
+      if(d.forno && typeof d.forno==="object"){ aplicarFornoNuvem(d.forno); }
+      else if(forno.fornadas.length){ fornoFaltaNaNuvem=true; }   // nuvem sem fornadas (aparelho com versão antiga salvou): reenvia as do aparelho
       try{ localStorage.setItem("orc_fund",JSON.stringify(saved)); localStorage.setItem("orc_fund_seq",JSON.stringify(seq)); }catch(e){}
       aplicandoNuvem=false;
       renderSaved();
       if(typeof renderClientes==="function") renderClientes();
       if(typeof renderEstoque==="function") renderEstoque();
+      if(typeof renderForno==="function") renderForno();
       marcaSync("ok");
+      if(fornoFaltaNaNuvem){ syncLiberado=true; agendarSync(); }
     } else {
       // central ainda vazia: sobe o que existe no aparelho pra iniciar
       syncLiberado=true;
@@ -2069,6 +2441,7 @@ CFG_CAMPOS.concat('propValidade').forEach(id=>{ const el=$(id); if(el) el.addEve
 renderSaved();
 if(typeof renderClientes==="function") renderClientes();
 renderEstoque();
+renderForno();
 calc();
 iniciarNuvem();   // carrega da central e mantém sincronizado
 </script>
