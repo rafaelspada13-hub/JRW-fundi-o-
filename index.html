@@ -2179,11 +2179,14 @@ function aplicarFornoNuvem(d){
 }
 
 function foLigas(atual){ const l=ligasCurtas().concat(['Outra']); if(atual && l.indexOf(atual)<0) l.push(atual); return l; }
-const FO_ENT=['Lingote','Sucata','Cavaco','Canal/massalote (retorno)','Outro'];
-// saídas: peças = produto; retorno = metal que volta (canal, massalote, sobra, respingo recolhido); borra = perda pesada
-const FO_SAI=['Peças','Canal/massalote','Sobra no cadinho','Respingo/derrame recolhido','Borra/escória'];
-function foGrupoSai(tipo){ if(tipo==='Peças') return 'pecas'; if(tipo==='Borra/escória') return 'borra'; return 'retorno'; }
+const FO_ENT=['Lingote','Sucata','Cavaco','Outro'];
+// entrada: canal/massalote que volta ao forno conta como sucata (lançamentos antigos)
+function foGrupoEnt(tipo){ if(tipo==='Lingote') return 'lingote'; if(tipo==='Cavaco') return 'cavaco'; if(tipo==='Outro') return 'outro'; return 'sucata'; }
+// saídas: peças = peso final aproveitado; sobras = metal que volta como sucata (canal, massalote, sobra no cadinho, respingo); borra = perda pesada
+const FO_SAI=['Peças (aproveitado)','Canal/massalote','Sobra no cadinho','Respingo/derrame recolhido','Borra/escória'];
+function foGrupoSai(tipo){ if(tipo==='Peças'||tipo==='Peças (aproveitado)') return 'pecas'; if(tipo==='Borra/escória') return 'borra'; return 'retorno'; }
 function foNum(n){ return String(n).padStart(2,'0'); }
+function foProxNum(){ return forno.fornadas.reduce((m,f)=>Math.max(m,f.num||0),0)+1; }
 function foKg(n){ return (n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' kg'; }
 function foPct(n){ return isFinite(n)?(n*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'—'; }
 function foDataBR(iso){ if(!iso) return ''; const a=iso.split('-'); return a[2]+'/'+a[1]+'/'+a[0]; }
@@ -2191,13 +2194,15 @@ function foHora(ts){ if(!ts) return ''; const d=new Date(ts); return d.toLocaleD
 
 function foCalc(f){
   const ent=f.entradas.reduce((t,x)=>t+(x.kg||0),0);
+  const eg={lingote:0,sucata:0,cavaco:0,outro:0};
+  f.entradas.forEach(x=>{ eg[foGrupoEnt(x.tipo)]+=x.kg||0; });
   let pecas=0,retorno=0,borra=0;
   f.saidas.forEach(x=>{ const g=foGrupoSai(x.tipo); if(g==='pecas') pecas+=x.kg||0; else if(g==='borra') borra+=x.kg||0; else retorno+=x.kg||0; });
   const sai=pecas+retorno+borra;
   const dif=ent-sai;                 // metal que entrou e não foi pesado na saída
   const perda=ent-pecas-retorno;     // metal perdido de fato = borra + diferença
-  return {ent,sai,pecas,retorno,borra,dif,perda,
-    pDif: ent>0?dif/ent:NaN, pPerda: ent>0?perda/ent:NaN, pRend: ent>0?pecas/ent:NaN, pBorra: ent>0?borra/ent:NaN};
+  return {ent,lingote:eg.lingote,sucata:eg.sucata,cavaco:eg.cavaco,outro:eg.outro,sai,pecas,retorno,borra,dif,perda,
+    pDif: ent>0?dif/ent:NaN, pPerda: ent>0?perda/ent:NaN, pRend: ent>0?pecas/ent:NaN, pBorra: ent>0?borra/ent:NaN, pRet: ent>0?retorno/ent:NaN};
 }
 function foFechadas(){ return forno.fornadas.filter(f=>f.status==='fechada'); }
 // média de diferença da liga (só fechadas, excluindo a própria)
@@ -2255,8 +2260,9 @@ function foRenderLista(){
     return '<div class="fo-card '+cls+'" data-foid="'+f.id+'">'
       +'<div class="fo-ct"><b>Fornada '+foNum(f.num)+'</b>'+tag+'</div>'
       +'<div class="fo-cs">'+foDataBR(f.data)+' · '+esc(f.forno)+' · '+esc(f.liga)+(f.operador?' · '+esc(f.operador):'')+'</div>'
-      +'<div class="fo-cn"><span>Entrou<b>'+foKg(c.ent)+'</b></span><span>Peças<b>'+foKg(c.pecas)+'</b></span>'
-      +'<span>Perda<b>'+(f.status==='fechada'?foPct(c.pPerda):'—')+'</b></span></div></div>';
+      +'<div class="fo-cn"><span>Entrou<b>'+foKg(c.ent)+'</b></span><span>Saiu<b>'+foKg(c.sai)+'</b></span><span>Aproveitado<b>'+foKg(c.pecas)+'</b></span>'
+      +'<span>Sobras → sucata<b>'+foKg(c.retorno)+'</b></span><span>Borra<b>'+foKg(c.borra)+'</b></span>'
+      +'<span>Perda real<b>'+(f.status==='fechada'?foKg(c.perda)+' · '+foPct(c.pPerda):'—')+'</b></span></div></div>';
   }).join('');
 }
 
@@ -2285,18 +2291,24 @@ function foRenderDet(){
     +cab
     +'<div class="fo-sec"><h3>Entrou no forno <span>'+foKg(c.ent)+'</span></h3>'+linhas(f.entradas,'E')+add('E',FO_ENT,'lote / NF')+'</div>'
     +'<div class="fo-sec"><h3>Saiu do forno <span>'+foKg(c.sai)+'</span></h3>'+linhas(f.saidas,'S')+add('S',FO_SAI,'OS / peça')+'</div>'
-    +'<div class="fo-bal">'
-      +'<div class="r"><span>Entrou</span><b>'+foKg(c.ent)+'</b></div>'
-      +'<div class="r"><span>Peças</span><b>'+foKg(c.pecas)+' · '+foPct(c.pRend)+'</b></div>'
-      +'<div class="r"><span>Retorno ao forno</span><b>'+foKg(c.retorno)+'</b></div>'
-      +'<div class="r"><span>Borra / escória</span><b>'+foKg(c.borra)+' · '+foPct(c.pBorra)+'</b></div>'
-      +'<div class="r '+(c.dif<0?'bad':'')+'"><span>Diferença não pesada</span><b>'+foKg(c.dif)+' · '+foPct(c.pDif)+'</b></div>'
-      +'<div class="r hl"><span>Perda real</span><b>'+foKg(c.perda)+' · '+foPct(c.pPerda)+'</b></div>'
-    +'</div>'
+    +foBalanco(c)
     +(al?'<div class="fo-alert">⚠ '+esc(al)+'</div>':'')
     +(ab?'<button class="fo-btn" id="foFechar">Fechar fornada</button>':'<button class="fo-btn sec" id="foReabrir">Reabrir para corrigir</button>')
     +'<button class="fo-btn sec" id="foShare">Compartilhar resumo</button>'
     +'<button class="fo-btn del" id="foExcluir">Excluir fornada</button>';
+}
+function foBalanco(c){
+  const sub=(t,v)=>v>0?'<div class="r" style="padding-left:14px;color:var(--muted)"><span>'+t+'</span><b>'+foKg(v)+' · '+foPct(c.ent>0?v/c.ent:NaN)+'</b></div>':'';
+  return '<div class="fo-bal">'
+    +'<div class="r hl"><span>1. ENTROU NO FORNO</span><b>'+foKg(c.ent)+'</b></div>'
+    +sub('Lingote',c.lingote)+sub('Sucata',c.sucata)+sub('Cavaco',c.cavaco)+sub('Outro',c.outro)
+    +'<div class="r hl"><span>2. SAIU DO FORNO</span><b>'+foKg(c.sai)+'</b></div>'
+    +'<div class="r" style="padding-left:14px"><span>Peso final aproveitado (peças)</span><b>'+foKg(c.pecas)+' · '+foPct(c.pRend)+'</b></div>'
+    +'<div class="r" style="padding-left:14px"><span>Sobras (voltam como sucata)</span><b>'+foKg(c.retorno)+' · '+foPct(c.pRet)+'</b></div>'
+    +'<div class="r" style="padding-left:14px"><span>Borra / escória</span><b>'+foKg(c.borra)+' · '+foPct(c.pBorra)+'</b></div>'
+    +'<div class="r '+(c.dif<0?'bad':'')+'"><span>3. Diferença não pesada (entrou − saiu)</span><b>'+foKg(c.dif)+' · '+foPct(c.pDif)+'</b></div>'
+    +'<div class="r hl"><span>4. PERDEU DE FATO (borra + diferença)</span><b>'+foKg(c.perda)+' · '+foPct(c.pPerda)+'</b></div>'
+    +'</div><div class="fo-hint">Perdeu de fato = entrou − peças aproveitadas − sobras. As sobras não são perda: voltam a ser sucata de bronze.</div>';
 }
 function foAbrir(id){ foAbertaId=id; foShow('det'); foRenderDet(); window.scrollTo(0,0); }
 function foTexto(f){
@@ -2304,9 +2316,21 @@ function foTexto(f){
   return 'JRW Fundição — Fornada '+foNum(f.num)+'\n'+foDataBR(f.data)+' · '+f.forno+' · '+f.liga+(f.operador?' · '+f.operador:'')
     +'\n\nENTROU: '+foKg(c.ent)+'\n'+f.entradas.map(x=>'- '+x.tipo+(x.obs?' ('+x.obs+')':'')+': '+foKg(x.kg)).join('\n')
     +'\n\nSAIU: '+foKg(c.sai)+'\n'+f.saidas.map(x=>'- '+x.tipo+(x.obs?' ('+x.obs+')':'')+': '+foKg(x.kg)).join('\n')
-    +'\n\nPeças: '+foKg(c.pecas)+' ('+foPct(c.pRend)+')\nBorra: '+foKg(c.borra)+' ('+foPct(c.pBorra)+')\nDiferença não pesada: '+foKg(c.dif)+' ('+foPct(c.pDif)+')\nPERDA REAL: '+foKg(c.perda)+' ('+foPct(c.pPerda)+')';
+    +'\n\nRESUMO\nEntrou: '+foKg(c.ent)+' (lingote '+foKg(c.lingote)+' · sucata '+foKg(c.sucata)+' · cavaco '+foKg(c.cavaco)+(c.outro>0?' · outro '+foKg(c.outro):'')+')'
+    +'\nSaiu: '+foKg(c.sai)
+    +'\nPeso final aproveitado: '+foKg(c.pecas)+' ('+foPct(c.pRend)+')'
+    +'\nSobras (voltam como sucata): '+foKg(c.retorno)+' ('+foPct(c.pRet)+')'
+    +'\nBorra: '+foKg(c.borra)+' ('+foPct(c.pBorra)+')'
+    +'\nDiferença não pesada: '+foKg(c.dif)+' ('+foPct(c.pDif)+')'
+    +'\nPERDEU DE FATO: '+foKg(c.perda)+' ('+foPct(c.pPerda)+')';
 }
 
+function foSomaCalc(arr){
+  const k=['ent','lingote','sucata','cavaco','outro','sai','pecas','retorno','borra','dif','perda'], o={};
+  k.forEach(x=>o[x]=arr.reduce((t,c)=>t+(c[x]||0),0));
+  const e=o.ent; o.pDif=e>0?o.dif/e:NaN; o.pPerda=e>0?o.perda/e:NaN; o.pRend=e>0?o.pecas/e:NaN; o.pBorra=e>0?o.borra/e:NaN; o.pRet=e>0?o.retorno/e:NaN;
+  return o;
+}
 function foRenderResumo(){
   const mes=$("foRMes").value;
   const list=foFechadas().filter(f=>!mes||(f.data||'').slice(0,7)===mes);
@@ -2315,22 +2339,25 @@ function foRenderResumo(){
   const tabela=(titulo,chave)=>{
     const g={}; list.forEach(f=>{ const k=chave(f)||'—'; (g[k]=g[k]||[]).push(foCalc(f)); });
     const rows=Object.keys(g).sort().map(k=>{
-      const a=g[k], E=a.reduce((t,c)=>t+c.ent,0), P=a.reduce((t,c)=>t+c.pecas,0), D=a.reduce((t,c)=>t+c.dif,0), L=a.reduce((t,c)=>t+c.perda,0);
-      return '<tr><td>'+esc(k)+'</td><td>'+a.length+'</td><td>'+eQ(E)+'</td><td>'+foPct(E>0?P/E:NaN)+'</td><td>'+foPct(E>0?D/E:NaN)+'</td><td><b>'+foPct(E>0?L/E:NaN)+'</b></td></tr>';
+      const a=g[k], S=f=>a.reduce((t,c)=>t+c[f],0);
+      const E=S('ent'), P=S('pecas'), R=S('retorno'), B=S('borra'), L=S('perda');
+      const pc=v=>foPct(E>0?v/E:NaN);
+      return '<tr><td>'+esc(k)+'</td><td>'+a.length+'</td><td>'+eQ(E)+'</td><td>'+eQ(S('lingote'))+'</td><td>'+eQ(S('sucata'))+'</td><td>'+eQ(S('cavaco'))+'</td><td>'+eQ(S('sai'))+'</td>'
+        +'<td>'+eQ(P)+'<br><small>'+pc(P)+'</small></td><td>'+eQ(R)+'<br><small>'+pc(R)+'</small></td><td>'+eQ(B)+'<br><small>'+pc(B)+'</small></td><td><b>'+eQ(L)+'</b><br><small><b>'+pc(L)+'</b></small></td></tr>';
     }).join('');
-    return '<div class="fo-sec"><h3>'+titulo+'</h3><div class="fo-scroll"><table class="fo-tbl"><thead><tr><th></th><th>Forn.</th><th>Entrou kg</th><th>Rend.</th><th>Dif.</th><th>Perda</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    return '<div class="fo-sec"><h3>'+titulo+'</h3><div class="fo-scroll"><table class="fo-tbl"><thead><tr><th></th><th>Forn.</th><th>Entrou</th><th>Lingote</th><th>Sucata</th><th>Cavaco</th><th>Saiu</th><th>Aproveit.</th><th>Sobras</th><th>Borra</th><th>Perdeu</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   };
   const alertas=list.filter(f=>foAlerta(f)).sort((a,b)=>b.num-a.num);
-  box.innerHTML=tabela('Por forno',f=>f.forno)+tabela('Por liga',f=>f.liga)+tabela('Por forneiro',f=>f.operador)
+  box.innerHTML=foBalanco(foSomaCalc(list.map(foCalc)))+tabela('Por forno',f=>f.forno)+tabela('Por liga',f=>f.liga)+tabela('Por forneiro',f=>f.operador)
     +'<div class="fo-sec"><h3>Fornadas para conferir <span>'+alertas.length+'</span></h3>'
     +(alertas.length?alertas.map(f=>'<div class="fo-ln" data-foid="'+f.id+'" style="cursor:pointer"><div class="i">Fornada '+foNum(f.num)+' · '+esc(f.forno)+' · '+esc(f.liga)+'<small>'+esc(foAlerta(f))+'</small></div></div>').join(''):'<div class="fo-empty">Nenhuma.</div>')
-    +'</div><div class="fo-hint" style="margin-top:12px">Rend. = peças ÷ entrou · Dif. = metal que entrou e não foi pesado na saída · Perda = borra + diferença.</div>';
+    +'</div><div class="fo-hint" style="margin-top:12px">Valores em kg (% sobre o que entrou). Aproveit. = peças · Sobras = voltam como sucata · Perdeu = borra + diferença não pesada.</div>';
 }
 
 // ---- eventos ----
 document.querySelectorAll('#tab-forno .fo-tab').forEach(b=>b.addEventListener('click',()=>{
   const v=b.dataset.fo; foShow(v);
-  if(v==='nova'){ $("foNNum").value=forno.seq+1; if(!$("foNData").value) $("foNData").value=eHoje(); }
+  if(v==='nova'){ $("foNNum").value=foNum(foProxNum()); if(!$("foNData").value) $("foNData").value=eHoje(); }
   if(v==='resumo'){ $("foLimite").value=forno.limite||''; foRenderResumo(); }
   if(v==='lista') foRenderLista();
 }));
@@ -2350,7 +2377,7 @@ $("foNSave").addEventListener('click',()=>{
   if(forno.fornadas.some(f=>f.num===n)){ eToast('Já existe a fornada '+foNum(n)+'.'); return; }
   const f={id:eUid(),num:n,data:$("foNData").value||eHoje(),forno:$("foNForno").value,liga:$("foNLiga").value,
     operador:$("foNOper").value.trim(),obs:$("foNObs").value.trim(),status:'aberta',criadaEm:Date.now(),entradas:[],saidas:[]};
-  forno.fornadas.push(f); forno.seq=Math.max(forno.seq,n);
+  forno.fornadas.push(f); forno.seq=foProxNum()-1;
   persistForno(); $("foNObs").value=''; eToast('Fornada '+foNum(n)+' aberta.'); renderForno(); foAbrir(f.id);
 });
 $('fo-det').addEventListener('click',e=>{
@@ -2382,7 +2409,7 @@ $('fo-det').addEventListener('click',e=>{
   }
   if(t.id==='foExcluir'){
     if(!confirm('Excluir a fornada '+foNum(f.num)+' e todos os lançamentos?')) return;
-    forno.fornadas=forno.fornadas.filter(x=>x.id!==f.id); foAbertaId=null; persistForno(); foShow('lista'); renderForno(); return;
+    forno.fornadas=forno.fornadas.filter(x=>x.id!==f.id); forno.seq=foProxNum()-1; foAbertaId=null; persistForno(); foShow('lista'); renderForno(); return;
   }
   if(t.id==='foShare'){
     const txt=foTexto(f);
