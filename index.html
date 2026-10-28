@@ -373,7 +373,7 @@
           <div><label>Nome da liga</label><input id="lgNome" placeholder="ex.: SAE 68C"></div>
           <div><label>Densidade (g/cm³)</label><input id="lgDens" inputmode="decimal" placeholder="ex.: 8,80"></div>
           <div><label>Metal (R$/kg)</label><input id="lgMetal" inputmode="decimal" placeholder="0,00"></div>
-          <div><label>Fusão (R$/kg)</label><input id="lgFusao" inputmode="decimal" value="6,40"></div>
+          <div><label>Fusão (R$/kg)</label><input id="lgFusao" inputmode="decimal" value="7,70"></div>
         </div>
         <button class="btn small" id="lgAdd" type="button">+ Adicionar liga</button>
         <div class="lgHint" id="lgMsg"></div>
@@ -487,7 +487,7 @@
 
       <div class="row" style="margin-top:12px">
         <div class="field"><label>Perda de fusão (%)</label><input id="perda" value="3"></div>
-        <div class="field"><label>Fusão / processo (R$/kg)</label><input id="pFusao" value="6.40"></div>
+        <div class="field"><label>Fusão / processo (R$/kg)</label><input id="pFusao" value="7.70"></div>
       </div>
       <div class="row">
         <div class="field"><label>Usinagem (R$/peça)</label><input id="usin" value="0"></div>
@@ -941,15 +941,15 @@ const LOGO="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwQDAwQEB
 
 // ---------- dados do ecossistema (editáveis nos campos) ----------
 const LIGAS = {
-  "Bronze TM23":      {dens:9.03, metal:75,  fusao:6.40},
-  "Bronze SAE 620":   {dens:8.70, metal:110, fusao:6.40},
-  "Bronze 65":        {dens:8.80, metal:120, fusao:6.40},
+  "Bronze TM23":      {dens:9.03, metal:75,  fusao:7.70},
+  "Bronze SAE 620":   {dens:8.70, metal:110, fusao:7.70},
+  "Bronze 65":        {dens:8.80, metal:120, fusao:7.70},
   "Alumínio":         {dens:2.70, metal:15,  fusao:2.35},
   "Latão":            {dens:8.50, metal:0,   fusao:5.00},
   "Aço carbono":      {dens:7.85, metal:0,   fusao:6.00},
   "Aço inox 304/316": {dens:7.90, metal:0,   fusao:7.00},
   "Ferro fundido":    {dens:7.20, metal:0,   fusao:5.00},
-  "Metal do cliente": {dens:8.50, metal:0,   fusao:6.40},
+  "Metal do cliente": {dens:8.50, metal:0,   fusao:7.70},
 };
 // nome curto usado no estoque e no controle de forno
 const LIGAS_CURTA = {"Bronze SAE 620":"SAE 620","Bronze 65":"SAE 65","Bronze TM23":"TM23","Alumínio":"Alumínio"};
@@ -960,7 +960,7 @@ let ligasUser = null;
 let ligasFaltaNaNuvem = false;
 try{ ligasUser = JSON.parse(localStorage.getItem('jrw_ligas')||'null'); }catch(e){}
 if(!Array.isArray(ligasUser)){
-  ligasUser = [{nome:"SAE 430B", dens:7.83, metal:0, fusao:6.40}];
+  ligasUser = [{nome:"SAE 430B", dens:7.83, metal:0, fusao:7.70}];
   ligasFaltaNaNuvem = true;
 }
 function lgCurta(nome){ return String(nome||'').replace(/^bronze\s+/i,'').trim(); }
